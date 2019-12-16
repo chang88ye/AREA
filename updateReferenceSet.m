@@ -1,3 +1,4 @@
+% updata refence set by achived solutions
 function [pop, W]=updateReferenceSet(pop, arch, W, zmin, zmax)
 [N1,M]=size(pop.objs);
 N2=size(arch.objs,1);
@@ -34,7 +35,6 @@ popObj=(pop.objs-zmin_)./(zmax_-zmin_);
 
 zmin_=repmat(zmin, N2,1);
 zmax_=repmat(zmax, N2,1);
-archObj=(arch.objs-zmin_)./(zmax_-zmin_);
 
 % remove points
 ToRemove=size(popObj,1)-N1;
@@ -61,28 +61,4 @@ if ToRemove>0
     end
 end
 
-% [bool, fit_id]=updatePop(popObj, archObj, W);
-% pop(bool)=arch(fit_id(bool));
-
-end
-
-function [bool, fit_id]=updatePop(popObj, archObj, W)
-N1=size(popObj,1);
-N2=size(archObj,1);
-
-fit_old = fitness(popObj,W)';
-fit_mat = fitnessMat(archObj,W);
-
-fit_new=inf*ones(1,N1);
-for i=1:min(N1,N2)
-    [min_val,idx]=min(fit_mat(:));
-    [row,col]=ind2sub([N2,N1],idx);
-    fit_id(col)=row;
-    fit_new(col)=min_val;
-    
-    fit_mat(row,:)=inf;
-    fit_mat(:,col)=inf;
-end
-
-bool=fit_old>fit_new;
 end

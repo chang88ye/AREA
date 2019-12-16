@@ -1,8 +1,9 @@
+% remove K members from population
 function Del = truncate(PopObj,K)
 % Select part of the solutions by truncation
 [N,M]=size(PopObj);
 
-%% Truncation
+% Calculate distance matrix
 Distance = inf(N);
 if (M<4) % Multiobjective
     Distance = pdist2(PopObj,PopObj);
@@ -15,6 +16,7 @@ else % Many-objective (with SDE)
     end
 end
 
+% Trucation
 Del = false(1,size(PopObj,1));
 while sum(Del) < K
     Remain   = find(~Del);

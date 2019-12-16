@@ -1,23 +1,23 @@
 function AREA(Global)
 % <algorithm> <A-G>
-% AREA: Adaptive Reference Set guided Evolutionary Algorithm
+% AREA: Adaptive reference set guided evolutionary algorithm
 
 %--------------------------------------------------------------------------
-% Copyright (c) 2016-2017 BIMK Group. You are free to use the PlatEMO for
-% research purposes. All publications which use this platform or any code
-% in the platform should acknowledge the use of "PlatEMO" and reference "Ye
-% Tian, Ran Cheng, Xingyi Zhang, and Yaochu Jin, PlatEMO: A MATLAB Platform
-% for Evolutionary Multi-Objective Optimization [Educational Forum], IEEE
-% Computational Intelligence Magazine, 2017, 12(4): 73-87".
+% Implemented by Dr Shouyong Jiang, last modified on 15/12/2019
+% Please acknowledge the use of this code and reference 
+% "Jiang et al. AREA: An adaptive reference-set based evolutionary algorithm 
+% for multiobjective optimisation. Information Sciences. Online:
+% https://doi.org/10.1016/j.ins.2019.12.011".
 %--------------------------------------------------------------------------
 
-%% Parameter setting
-delta=Global.ParameterSet(0.9);
+%% set default operator
+operator=Global.operator;
+% operator=@DE;
 
 %% Generate the weight vectors
 [W,Global.N] = UniformPoint(Global.N,Global.M);
 T = ceil(sqrt(Global.N));
-archSize=ceil(1.0*Global.N);
+archSize=ceil(1.2*Global.N);
 
 %% Detect the neighbours of each solution
 B = pdist2(W,W);
@@ -49,8 +49,6 @@ while Global.NotTermination(Archive)
                 [~,B] = sort(B,2);
                 B = B(:,1:T);
                 W1=W;
-                plot(W(:,1),W(:,2),'r+');
-                hold on
             end
         else
             W=W0;
@@ -59,8 +57,7 @@ while Global.NotTermination(Archive)
         Population=updatePop(Population, Archive, Intercept, Z, W);
     end
     
-    % For each solution
-    
+    % For each solution  
     [dist,id] = pdist2(Archive.objs,Population.objs,'euclidean','Smallest',1);
     [uid,~,ic]=unique(id);
     dist2=pdist2(Archive.objs,Archive(uid).objs,'euclidean','Smallest',Global.M+1);
@@ -69,19 +66,20 @@ while Global.NotTermination(Archive)
     Prob = dist/max(dist)+0.2;
     
     Offspring=INDIVIDUAL();
-    for i = randperm(Global.N) %1 : Global.N
-        if (rand<Prob(i))
+    for i = randperm(Global.N) %
+        if rand<Prob(i)
             P = B(i,randperm(size(B,2)));
-            if rand<0.5
-                P(2)=randi(Global.N);
-            end
         else
             P= randperm(Global.N);
         end
         
         P=P(1:2);
         % Generate an offspring
-        child = Global.Variation(Population(P),1);
+        if isequal(operator,@DE)
+            P=[i, P];
+        end
+        
+        child = Global.Variation(Population(P),1, operator);
         
         % Update the ideal point
         Z = min(Z,child.obj);
@@ -89,10 +87,11 @@ while Global.NotTermination(Archive)
         % Update solution of best matched reference
         [~,bestR]=min(fitnessMat((child.obj-Z)./(Intercept-Z),W));
         
-        P=B(bestR,:);
-        g_old= fitness((Population(P).objs - repmat(Z, length(P),1))./repmat(Intercept-Z, length(P),1),W(P,:));
+        P=B(bestR,:);     
+        g_old= fitness((Population(P).objs - Z)./(Intercept-Z),W(P,:));
         g_new= fitness(repmat((child.objs-Z)./(Intercept-Z), length(P),1),W(P,:));
-        Population(P(find(g_old>=g_new,1)))=child;
+        
+        Population(P(find(g_old>=g_new,2)))=child;
         Offspring(i)=child;
     end
     
@@ -112,18 +111,24 @@ while Global.NotTermination(Archive)
     end
     
 end
-
 end
 
+
+
 function pop=updatePop(pop, arch, zmax, zmin, W)
+[N,M]=size(W);
 merged=[pop,arch];
 [~,IA]=unique(merged.objs,'rows');
+if length(IA)<=N
+    return;
+end
+
 merged=merged(IA);
 mergedObj=merged.objs;
 
 mergedObj=(mergedObj-repmat(zmin, length(merged),1))./repmat(zmax-zmin, length(merged),1);
 
-[N,M]=size(W);
+
 record=true(N,1);
 dist2 = pdist2(W-1.0/M,mergedObj);
 k=0;
@@ -151,4 +156,3 @@ while (k<N)
     end
 end
 end
-

@@ -1,3 +1,4 @@
+% Create fitness matrix
 function fit=fitnessMat(popObj,W)
 M=size(W,2);
 offset=1.0/M;
